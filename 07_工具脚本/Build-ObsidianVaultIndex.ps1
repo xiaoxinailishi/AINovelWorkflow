@@ -1,5 +1,6 @@
 param(
     [Parameter(Mandatory = $true)][string]$VaultRoot,
+    [string]$RootLabel,
     [string]$IndexRelativePath = '00_Obsidian导航\01_全库文件直链索引.md',
     [string]$NodeDirectoryRelativePath = '00_Obsidian导航\文件夹节点',
     [string]$EntryRelativePath = 'OBSIDIAN_库入口.md'
@@ -7,6 +8,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $vaultFull = [IO.Path]::GetFullPath($VaultRoot).TrimEnd('\')
+$displayRoot = if ([string]::IsNullOrWhiteSpace($RootLabel)) { $vaultFull } else { $RootLabel }
 if (-not (Test-Path -LiteralPath $vaultFull -PathType Container)) {
     throw "Vault root not found: $vaultFull"
 }
@@ -129,7 +131,7 @@ $topDirectories = @($directories | Where-Object { $_.Parent.FullName -eq $vaultF
 $rootBuilder = [Text.StringBuilder]::new()
 [void]$rootBuilder.AppendLine('# 全库目录树与文件直链入口')
 [void]$rootBuilder.AppendLine()
-[void]$rootBuilder.AppendLine("- 库根目录：``$vaultFull``")
+[void]$rootBuilder.AppendLine("- 库根目录：``$displayRoot``")
 [void]$rootBuilder.AppendLine("- 生成时间：$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 [void]$rootBuilder.AppendLine("- 物理文件夹节点：$($directories.Count)")
 [void]$rootBuilder.AppendLine("- 被目录节点直接链接的普通文件：$($files.Count)")
