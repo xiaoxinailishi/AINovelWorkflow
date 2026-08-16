@@ -2,12 +2,15 @@
 
 本目录保存由通用模板库当前公开发行基线生成的扣子可导入Skill压缩包。它与Codex插件分开生成，避免两端frontmatter和目录规范相互污染。
 
+当前模板规则版本：`v1.4`。
+
 ## 使用边界
 
 - 发行文件：[novel-writing-template-coze.zip](novel-writing-template-coze.zip)
 - ZIP根目录直接包含`SKILL.md`与`references/`；`SKILL.md`的frontmatter包含`name`、`description`和`required_skills`。
 - 扣子修改稿中的有效“防偷步”思路已核验并吸收；AIGC展示字段、固定三千字门槛、互相矛盾的分身规则和具体项目编号未写入通用规则。
 - 正式完成必须有当前对象的真实文件、逐项核验结果和可复查证据；批量扫描、旧卡复用或摘要结论不能代替逐章逐行语义核验。
+- 写前、写中、写后、每五W、C正式章和卷终均有固定必需文件矩阵；缺文件、错目录、空内容、待核、SHA或关联不一致时禁止验收。
 
 ## 文件关联
 

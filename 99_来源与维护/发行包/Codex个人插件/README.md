@@ -2,12 +2,15 @@
 
 本目录保存由通用模板库当前公开发行基线生成的Codex个人插件压缩包。插件内置`novel-writing-template`技能，但不包含任何具体小说正文、人物、世界观或作者裁决。
 
+当前插件版本：`0.1.1`；模板规则版本：`v1.4`。
+
 ## 安装边界
 
 - 发行文件：[ai-novel-workflow-codex-plugin.zip](ai-novel-workflow-codex-plugin.zip)
 - 解压后，插件根目录必须直接包含`.codex-plugin/plugin.json`和`skills/novel-writing-template/SKILL.md`。
 - `SKILL.md`只负责强制预检、阶段路由和完成闸门，不能替代模板库唯一入口、规则全文、项目现状或人工语义验收。
 - 正式完成必须有当前对象的真实文件、逐项核验结果和可复查证据；快速草稿不得伪装成正式完成。
+- 写前、写中、写后、每五W、C正式章和卷终均有固定必需文件矩阵；缺文件、错目录、空内容、待核、SHA或关联不一致时禁止验收。
 
 ## 文件关联
 
