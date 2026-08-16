@@ -1,0 +1,12 @@
+.obsidian/
+.trash/
+.DS_Store
+Thumbs.db
+desktop.ini
+__pycache__/
+*.tmp
+*.bak
+*.log
+chunk_*.py
+__filelist.txt
+_transfer_test.txt

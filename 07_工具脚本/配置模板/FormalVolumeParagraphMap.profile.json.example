@@ -1,0 +1,24 @@
+{
+  "expectedSourceFiles": 3,
+  "expectedParagraphs": 120,
+  "chapters": [
+    {
+      "file": "第001章_按最终内容命名.md",
+      "title": "第001章 按最终内容命名",
+      "endParagraph": 40,
+      "expectedBodyNonspace": 3200
+    },
+    {
+      "file": "第002章_按最终内容命名.md",
+      "title": "第002章 按最终内容命名",
+      "endParagraph": 80,
+      "expectedBodyNonspace": 3300
+    },
+    {
+      "file": "第003章_按最终内容命名_卷末.md",
+      "title": "第003章 按最终内容命名（第X卷结束）",
+      "endParagraph": 120,
+      "expectedBodyNonspace": 3400
+    }
+  ]
+}
