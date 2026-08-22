@@ -43,6 +43,117 @@ function Get-FrontmatterKeys {
     return $keys
 }
 
+function New-Utf8FileOnlyArchive {
+    param(
+        [Parameter(Mandatory = $true)][string]$SourceDirectory,
+        [Parameter(Mandatory = $true)][string]$DestinationPath
+    )
+
+    Add-Type -AssemblyName System.IO.Compression
+    $sourceFull = [IO.Path]::GetFullPath($SourceDirectory).TrimEnd('\')
+    $utf8Strict = [Text.UTF8Encoding]::new($false, $true)
+    $records = [Collections.Generic.List[object]]::new()
+    $seen = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($file in @(Get-ChildItem -LiteralPath $sourceFull -Recurse -File -Force | Sort-Object FullName)) {
+        $entryName = [IO.Path]::GetRelativePath($sourceFull, $file.FullName).Replace('\', '/').Normalize([Text.NormalizationForm]::FormC)
+        $segments = @($entryName -split '/')
+        if ([string]::IsNullOrWhiteSpace($entryName) -or
+            $entryName.StartsWith('/', [StringComparison]::Ordinal) -or
+            $entryName -match '^[A-Za-z]:' -or
+            $segments -contains '..' -or
+            $segments -contains '.') {
+            throw "ZIP条目路径不安全：$entryName"
+        }
+        if (-not $seen.Add($entryName)) {
+            throw "ZIP含大小写或Unicode规范化冲突路径：$entryName"
+        }
+        $records.Add([PSCustomObject]@{
+            SourcePath = $file.FullName
+            EntryName = $entryName
+            SHA256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash
+        })
+    }
+
+    $stream = [IO.File]::Open($DestinationPath, [IO.FileMode]::CreateNew, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    try {
+        $archive = [IO.Compression.ZipArchive]::new($stream, [IO.Compression.ZipArchiveMode]::Create, $true, $utf8Strict)
+        try {
+            foreach ($record in $records) {
+                $entry = $archive.CreateEntry($record.EntryName, [IO.Compression.CompressionLevel]::Optimal)
+                $input = [IO.File]::OpenRead($record.SourcePath)
+                try {
+                    $entryOutput = $entry.Open()
+                    try { $input.CopyTo($entryOutput) } finally { $entryOutput.Dispose() }
+                } finally {
+                    $input.Dispose()
+                }
+            }
+        } finally {
+            $archive.Dispose()
+        }
+    } finally {
+        $stream.Dispose()
+    }
+
+    $verifyRoot = Join-Path ([IO.Path]::GetTempPath()) ("novel-zip-verify-" + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $verifyRoot -Force | Out-Null
+    try {
+        $readStream = [IO.File]::OpenRead($DestinationPath)
+        try {
+            $readArchive = [IO.Compression.ZipArchive]::new($readStream, [IO.Compression.ZipArchiveMode]::Read, $false, $utf8Strict)
+            try {
+                if ($readArchive.Entries.Count -ne $records.Count) {
+                    throw "ZIP条目数与源文件数不一致：ZIP=$($readArchive.Entries.Count)，源文件=$($records.Count)"
+                }
+                foreach ($entry in $readArchive.Entries) {
+                    if ($entry.FullName.EndsWith('/', [StringComparison]::Ordinal)) {
+                        throw "ZIP含显式目录条目：$($entry.FullName)"
+                    }
+                    $target = [IO.Path]::GetFullPath((Join-Path $verifyRoot $entry.FullName.Replace('/', '\')))
+                    $verifyPrefix = [IO.Path]::GetFullPath($verifyRoot).TrimEnd('\') + '\'
+                    if (-not $target.StartsWith($verifyPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                        throw "ZIP解压目标越界：$($entry.FullName)"
+                    }
+                    $parent = [IO.Directory]::GetParent($target).FullName
+                    if (-not [IO.Directory]::Exists($parent)) { [IO.Directory]::CreateDirectory($parent) | Out-Null }
+                    $entryInput = $entry.Open()
+                    try {
+                        $fileOutput = [IO.File]::Create($target)
+                        try { $entryInput.CopyTo($fileOutput) } finally { $fileOutput.Dispose() }
+                    } finally {
+                        $entryInput.Dispose()
+                    }
+                }
+            } finally {
+                $readArchive.Dispose()
+            }
+        } finally {
+            $readStream.Dispose()
+        }
+
+        foreach ($record in $records) {
+            $extracted = Join-Path $verifyRoot $record.EntryName.Replace('/', '\')
+            if (-not (Test-Path -LiteralPath $extracted -PathType Leaf) -or
+                (Get-FileHash -Algorithm SHA256 -LiteralPath $extracted).Hash -ne $record.SHA256) {
+                throw "ZIP干净解压后文件缺失或SHA256不一致：$($record.EntryName)"
+            }
+        }
+    } finally {
+        $tempPrefix = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\'
+        $verifyFull = [IO.Path]::GetFullPath($verifyRoot)
+        if (-not $verifyFull.StartsWith($tempPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            throw "拒绝清理非临时目录：$verifyFull"
+        }
+        if (Test-Path -LiteralPath $verifyFull) { Remove-Item -LiteralPath $verifyFull -Recurse -Force }
+    }
+
+    [PSCustomObject]@{
+        DirectoryEntries = 0
+        Utf8EntryNames = 'ENFORCED'
+        CleanExtractionSHA256 = 'PASS'
+    }
+}
+
 $release = (Resolve-Path -LiteralPath $ReleaseRoot).Path
 $skillSource = Join-Path $release 'SKILL.md'
 if (-not (Test-Path -LiteralPath $skillSource -PathType Leaf)) {
@@ -88,6 +199,11 @@ try {
     Get-ChildItem -LiteralPath $referencesRoot -Recurse -File -Filter '*.md' | ForEach-Object {
         $referenceText = Get-Content -Raw -Encoding UTF8 -LiteralPath $_.FullName
         $cleanedReferenceText = $referenceText -replace '\[([^\]]+)\]\((?:<)?[^)\r\n]*发行包[^)\r\n]*(?:>)?\)', '$1'
+        $cleanedReferenceText = [regex]::Replace(
+            $cleanedReferenceText,
+            '(?m)^.*\((?:<)?\.\./(?:__filelist\.txt|_transfer_test\.txt|chunk_\d+\.py)(?:>)?\).*\r?\n?',
+            ''
+        )
         $cleanedReferenceText = $cleanedReferenceText.Replace('通用模板库文件清单.tsv', '技能包文件清单.tsv')
         $topSkillRelative = [System.IO.Path]::GetRelativePath($_.DirectoryName, (Join-Path $stage 'SKILL.md')).Replace('\', '/')
         $cleanedReferenceText = [regex]::Replace($cleanedReferenceText, '\((?:<)?(?:\.\.?/)*SKILL\.md(?:>)?\)', "($topSkillRelative)")
@@ -164,7 +280,7 @@ try {
         throw "技能包仍含本机绝对路径：$($pathLeaks -join ', ')"
     }
 
-    Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $outputFull -CompressionLevel Optimal
+    $zipValidation = New-Utf8FileOnlyArchive -SourceDirectory $stage -DestinationPath $outputFull
 
     $zip = Get-Item -LiteralPath $outputFull
     $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $outputFull).Hash
@@ -175,6 +291,9 @@ try {
         SHA256 = $hash
         Target = $Target
         Frontmatter = $keys -join ','
+        DirectoryEntries = $zipValidation.DirectoryEntries
+        Utf8EntryNames = $zipValidation.Utf8EntryNames
+        CleanExtractionSHA256 = $zipValidation.CleanExtractionSHA256
     }
 }
 finally {

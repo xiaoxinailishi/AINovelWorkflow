@@ -18,7 +18,7 @@
 | `Build-FormalVolumeTxt.ps1` | 按清单合成整卷TXT | 卷末标记正则由项目传入；输出必须在项目根目录内 |
 | `Build-ObsidianVaultIndex.ps1` | 为每个物理文件夹生成节点笔记；让库入口同时直连目录树总入口和顶层文件夹，再连接子文件夹与本层文档；公开发行时可用`-RootLabel`写入脱敏显示名 | 只清理固定生成目录中的`目录__*.md`；只替换库入口内带标记的自动生成区；排除`.obsidian`、`.git`、`.trash`；不替代项目入口、规则索引或文件注册表 |
 | `Test-FileAssociations.ps1` | 只读统计现行Markdown是否填写语义关联、是否至少含一个出链候选，并列出存量缺口 | 不自动补链接、不推断业务语义；默认只报告，`-FailOnMissing`才以缺口阻断；排除历史层和机械文件夹节点 |
-| `Build-NovelWritingSkillPackage.ps1` | 从已经脱敏并验收的发行根目录生成Codex或扣子Skill ZIP，重写Skill引用路径并检查frontmatter和本机绝对路径 | 不得直接把含私人路径、具体小说资产或未验收规则的工作目录公开；不能代替Codex插件清单验收 |
+| `Build-NovelWritingSkillPackage.ps1` | 从已经脱敏并验收的发行根目录生成Codex或扣子Skill ZIP，重写Skill引用路径，清除已排除根临时文件在目录索引中的残留链接，并检查frontmatter、本机绝对路径；ZIP只写UTF-8、NFC、正斜杠文件条目，完成干净解压SHA复验 | 不得直接把含私人路径、具体小说资产或未验收规则的工作目录公开；不能代替Codex插件清单验收 |
 
 ## 三、推荐调用顺序
 

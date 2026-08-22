@@ -1,18 +1,20 @@
 # Obsidian入库记录
 
-- 库根目录：下载或克隆后的仓库根目录
-- 独立配置目录：`.obsidian`，公开发行版不上传；首次打开后由本机Obsidian自动生成
-- 当前运行配置：由每位使用者本机维护，不属于公开模板资产
+- 库根目录：`{{模板库根目录}}`
+- 独立配置目录：`.obsidian`
+- 当前运行配置：`app.json`、`appearance.json`、`core-plugins.json`、`graph.json`、`workspace.json`共5份；后四份由Obsidian打开库后自动产生或维护
 - 目录树入口：`01_全库文件直链索引.md`
 - 文件夹节点目录：`文件夹节点`
-- 本机Obsidian注册：由使用者自行完成
-- Vault ID：公开发行版不登记
-- 本机注册文件与备份：公开发行版不登记
-- 当前目录树重建：2026-08-21 11:23:18
-- 物理文件夹节点：41个
-- 被所属文件夹节点直接链接：137个普通文件
+- 本机Obsidian注册：按使用者本机状态登记
+- Vault ID：`{{本机Vault ID}}`
+- 本机注册文件：`{{Obsidian配置目录}}\obsidian.json`
+- 注册前备份：`{{Obsidian配置目录}}\obsidian.json.codex-backup-YYYYMMDD_HHMMSS`
+- 注册时间：`{{本机注册时间}}`
+- 当前目录树重建：2026-08-22（公开发行重建）
+- 物理文件夹节点：42个
+- 被所属文件夹节点直接链接：141个普通文件
 - 库入口直接链接：目录树总入口及10个顶层文件夹节点
-- 当前索引SHA256：`4B01CAC2E7BFC59C5E9AB09A1B597D974E0D26C66626866059CDD6AA756DF5F8`
+- 当前索引SHA256：`6D2EBFD9005C1A892BFEE6E88AB301F471F676DC8282BDCEB54670FD4A63034C`
 - 结构：库入口同时直连目录树总入口与顶层文件夹 → 子文件夹 → 本层文档
 
 ## 维护方法
@@ -20,8 +22,7 @@
 新增、删除、改名或移动文件后，运行：
 
 ```powershell
-$vaultRoot = (Resolve-Path '.').Path
-& (Join-Path $vaultRoot '07_工具脚本\Build-ObsidianVaultIndex.ps1') -VaultRoot $vaultRoot
+& '.\07_工具脚本\Build-ObsidianVaultIndex.ps1' -VaultRoot '.'
 ```
 
 随后重新核对物理文件夹数、目录节点数、普通文件覆盖和断链。`.obsidian`、`.git`、`.trash`及脚本生成的节点目录不作为原始内容重复扫描。
